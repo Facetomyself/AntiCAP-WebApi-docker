@@ -1,6 +1,6 @@
 <div align="center">
 
-# AntiCAP WebApi
+# AntiCAP-WebApi
 
 </div>
 
