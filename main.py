@@ -61,7 +61,7 @@ class CompareImageIn(BaseModel):
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login")
 
-Atc = AntiCAP.AntiCAP(show_banner=False)
+Atc = AntiCAP.Handler(show_banner=False)
 
 
 
