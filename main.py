@@ -102,6 +102,11 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 
 
 
+@app.get("/api/verify_token", summary="验证JWT", tags=["公共"])
+async def verify_token_endpoint(current_user: str = Depends(get_current_user)):
+    return {"username": current_user}
+
+
 @app.post("/api/login", summary="登录获取JWT", tags=["公共"])
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     if form_data.username != VALID_USERNAME or form_data.password != VALID_PASSWORD:
@@ -180,7 +185,7 @@ if __name__ == '__main__':
 |         Github: https://github.com/81NewArk             |
 |         Author: 81NewArk                                |
 -----------------------------------------------------------
-|                    Version:1.0.4                        |
+|                    Version:1.0.5                        |
 -----------------------------------------------------------''')
 
 
