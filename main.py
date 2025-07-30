@@ -175,7 +175,7 @@ async def compare_similarity(data: CompareImageIn, current_user: str = Depends(g
 
 
 
-app.mount("/", StaticFiles(directory="out", html=True), name="static")
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 
 
