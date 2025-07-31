@@ -6,7 +6,9 @@
 
 ## 🌍环境说明
 ```
-python 3.10.6
+python >= 3.10.6   64bit
+
+# pyjwt库不支持低版本python 
 ```
 
 <div align="center">
@@ -36,6 +38,12 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 python main.py
 ```
 
+### 4.输入账号密码和端口号 
+```
+账号密码为前端页面账号密码，端口号可自定义不输入回车默认为6688
+
+本项目未写数据库部分 有能力自行扩展
+```
 
 ###  Web页面
 ❗ 服务器部署打开6688端口
