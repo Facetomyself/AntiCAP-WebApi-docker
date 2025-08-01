@@ -6,9 +6,9 @@
 
 ## 🌍环境说明
 ```
-python >= 3.10.6   64bit
+python >= 3.8 64bit
 
-# pyjwt库不支持低版本python 
+# pyjwt库可能不支持低版本python 推荐使用3.10.6版本 
 ```
 
 <div align="center">
