@@ -2,8 +2,8 @@ import os
 import jwt
 import AntiCAP
 import uvicorn
-
-from datetime import datetime, timedelta
+from typing import Optional
+from datetime import datetime, timedelta, timezone
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
@@ -28,8 +28,8 @@ description = """
 
 
 app = FastAPI(
-    title="AntiCAP - WebApi", 
-    description=description, 
+    title="AntiCAP - WebApi",
+    description=description,
     version="1.0.5",
     swagger_ui_parameters={
         "swagger_js_url": "https://cdn.bootcdn.net/ajax/libs/swagger-ui/5.22.0/swagger-ui-bundle.js",
@@ -73,15 +73,18 @@ Atc = AntiCAP.Handler(show_banner=False)
 
 
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
+    now_utc = datetime.now(timezone.utc)
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = now_utc + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
+        expire = now_utc + timedelta(minutes=15)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+
 
 def verify_token(token: str, credentials_exception):
     try:
@@ -109,12 +112,6 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 
 
 
-
-@app.get("/api/verify_token", summary="验证JWT", tags=["公共"])
-async def verify_token_endpoint(current_user: str = Depends(get_current_user)):
-    return {"username": current_user}
-
-
 @app.post("/api/login", summary="登录获取JWT", tags=["公共"])
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     if form_data.username != VALID_USERNAME or form_data.password != VALID_PASSWORD:
@@ -132,6 +129,11 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
         "access_token": access_token,
         "token_type": "bearer"
     }
+
+
+@app.get("/api/verify_token", summary="验证JWT", tags=["公共"])
+async def verify_token_endpoint(current_user: str = Depends(get_current_user)):
+    return {"username": current_user}
 
 
 @app.post("/ocr",summary="返回字符串",tags=["OCR识别"])
