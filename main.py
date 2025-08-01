@@ -3,12 +3,12 @@ import jwt
 import AntiCAP
 import uvicorn
 from typing import Optional
+from pydantic import BaseModel
+from fastapi.staticfiles import StaticFiles
 from datetime import datetime, timedelta, timezone
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from pydantic import BaseModel
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 
 
 SECRET_KEY = None
@@ -131,53 +131,53 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     }
 
 
-@app.get("/api/verify_token", summary="验证JWT", tags=["公共"])
+@app.get("/api/tokens/verification", summary="验证JWT", tags=["公共"])
 async def verify_token_endpoint(current_user: str = Depends(get_current_user)):
     return {"username": current_user}
 
 
-@app.post("/ocr",summary="返回字符串",tags=["OCR识别"])
+@app.post("/api/ocr",summary="返回字符串",tags=["OCR识别"])
 async def ocr(data: ModelImageIn, current_user: str = Depends(get_current_user)):
     result = Atc.OCR(data.img_base64)
     return {"result": result }
 
-@app.post("/math",summary="返回计算结果",tags=["计算识别"])
+@app.post("/api/math",summary="返回计算结果",tags=["计算识别"])
 async def math(data: ModelImageIn, current_user: str = Depends(get_current_user)):
     result = Atc.Math(data.img_base64)
     return {"result": result }
 
-@app.post("/detection/icon",summary="检测图标,返回坐标",tags=["目标检测"])
+@app.post("/api/detection/icon",summary="检测图标,返回坐标",tags=["目标检测"])
 async def detection_icon(data: ModelImageIn, current_user: str = Depends(get_current_user)):
     result = Atc.Detection_Icon(data.img_base64)
     return {"result": result }
 
-@app.post("/detection/text",summary="侦测文字,返回坐标",tags=["目标检测"])
+@app.post("/api/detection/text",summary="侦测文字,返回坐标",tags=["目标检测"])
 async def detection_text(data: ModelImageIn, current_user: str = Depends(get_current_user)):
     result = Atc.Detection_Text(data.img_base64)
     return {"result": result}
 
-@app.post("/detection/icon/order",summary="按序返回图标的坐标",tags=["目标检测"])
+@app.post("/api/detection/icon/order",summary="按序返回图标的坐标",tags=["目标检测"])
 async def detection_icon_order(data: ModelOrderImageIn, current_user: str = Depends(get_current_user)):
     result = Atc.ClickIcon_Order(order_img_base64=data.order_img_base64,target_img_base64=data.target_img_base64)
     return {"result": result }
 
-@app.post("/detection/text/order",summary="按序返回文字的坐标",tags=["目标检测"])
+@app.post("/api/detection/text/order",summary="按序返回文字的坐标",tags=["目标检测"])
 async def detection_text_order(data: ModelOrderImageIn, current_user: str = Depends(get_current_user)):
     result = Atc.ClickText_Order(order_img_base64=data.order_img_base64,target_img_base64=data.target_img_base64)
     return {"result": result }
 
-@app.post("/slider/match",summary="缺口滑块,返回坐标",tags=["滑块验证码"])
+@app.post("/api/slider/match",summary="缺口滑块,返回坐标",tags=["滑块验证码"])
 async def slider_match(data: SliderImageIn, current_user: str = Depends(get_current_user)):
     result = Atc.Slider_Match(target_base64=data.target_base64,background_base64=data.background_base64)
     return {"result": result }
 
-@app.post("/slider/comparison",summary="阴影滑块,返回坐标",tags=["滑块验证码"])
+@app.post("/api/slider/comparison",summary="阴影滑块,返回坐标",tags=["滑块验证码"])
 async def slider_comparison(data: SliderImageIn, current_user: str = Depends(get_current_user)):
     result = Atc.Slider_Comparison(target_base64=data.target_base64,background_base64=data.background_base64)
     return {"result": result }
 
 
-@app.post("/compare/similarity", summary="对比图片相似度", tags=["图片对比"])
+@app.post("/api/compare/similarity", summary="对比图片相似度", tags=["图片对比"])
 async def compare_similarity(data: CompareImageIn, current_user: str = Depends(get_current_user)):
     result = Atc.compare_image_similarity(image1_base64=data.img1_base64, image2_base64=data.img2_base64)
     return {"result": float(result)}
