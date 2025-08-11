@@ -1,6 +1,12 @@
 @echo off
 
-python -m venv .venv
+REM 判断虚拟环境是否存在
+if not exist ".venv\Scripts\activate.bat" (
+    echo Creating virtual environment...
+    python -m venv .venv
+) else (
+    echo Virtual environment already exists.
+)
 
 call .venv\Scripts\activate.bat
 
