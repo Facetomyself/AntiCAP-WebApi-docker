@@ -13,59 +13,67 @@ python >= 3.8 64bit
 
 <div align="center">
 
-## 📁 安装
+## 📁 手动安装
 
 </div>
 
-###  1.Git克隆仓库 或 手动下载
+
 
 ```
+# 1.Git克隆仓库 或 手动下载
 git clone https://github.com/81NewArk/AntiCAP-WebApi
 
+# 2.进入项目目录
 cd AntiCAP-WebApi
-```
 
-
-
-### 2.使用清华源下载项目所需依赖
-```
+# 3.使用清华源下载项目所需依赖
 pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
-```
 
-
-### 3.运行main.py
-```
+# 4.运行项目
 python main.py
-```
 
-### 4.输入账号密码和端口号 
-```
-账号密码为前端页面账号密码，端口号可自定义不输入回车默认为6688
+# 5.输入账号密码和端口号，端口号直接回车默认为6688
+# 首次运行要求输入账号密码 然后会把账号密码保存到当前目录下.ebnv文件中 
+# 自行修改账号密码请删除该文件重新运行
 
-本项目未写数据库部分 有能力自行扩展
-```
-
-###  Web页面
-❗ 服务器部署打开6688端口
-
-```
-# Web主页:
-
+# 6.访问Web主页和开发者文档：
 http://127.0.0.1:6688/
 http://localhost:6688/
 
-# 开发者文档：
-
 http://127.0.0.1:6688/docs
 http://localhost:6688/docs
+
+
 ```
+
+<div align="center">
+
+## 🤖 自动安装
+
+</div>
+
+```
+# 1.Git克隆仓库 或 手动下载
+git clone https://github.com/81NewArk/AntiCAP-WebApi
+
+# 2.Windows系统双击 Run.bat文件，会自动安装所需依赖并运行项目
+
+# 3.输如账号 密码和端口号，端口号直接回车默认为6688
+
+```
+
+
 <div align="center">
 
 ## 📄 使用说明
 
+### 本项目支持本地，局域网，公网部署
+
 </div>
 
 ```
+# 早期版本录制的视频，但是内容大致适用
+
 https://www.bilibili.com/video/BV1xYGgz9ENE
 ```
 # 🐧 QQ交流群
