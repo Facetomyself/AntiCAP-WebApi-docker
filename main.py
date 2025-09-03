@@ -193,25 +193,25 @@ async def detection_text_order(data: ModelOrderImageIn, current_user: str = Depe
     result = Atc.ClickText_Order(order_img_base64=data.order_img_base64,target_img_base64=data.target_img_base64)
     return {"result": result }
 
-@app.post("/api/slider/match",summary="缺口滑块,返回坐标",tags=["滑块验证码"])
+@app.post("/api/slider/match",summary="缺口滑块,返回坐标",tags=["滑块验证码，OpenCV算法"])
 async def slider_match(data: SliderImageIn, current_user: str = Depends(get_current_user)):
     result = Atc.Slider_Match(target_base64=data.target_base64,background_base64=data.background_base64)
     return {"result": result }
 
-@app.post("/api/slider/comparison",summary="阴影滑块,返回坐标",tags=["滑块验证码"])
+@app.post("/api/slider/comparison",summary="阴影滑块,返回坐标",tags=["滑块验证码，OpenCV算法"])
 async def slider_comparison(data: SliderImageIn, current_user: str = Depends(get_current_user)):
     result = Atc.Slider_Comparison(target_base64=data.target_base64,background_base64=data.background_base64)
     return {"result": result }
 
 
-@app.post("/api/compare/similarity", summary="对比图片相似度", tags=["图片对比"])
+@app.post("/api/compare/similarity", summary="对比图片相似度", tags=["图片对比，孪生神经经网络模型"])
 async def compare_similarity(data: CompareImageIn, current_user: str = Depends(get_current_user)):
     result = Atc.compare_image_similarity(image1_base64=data.img1_base64, image2_base64=data.img2_base64)
     return {"result": float(result)}
 
 
 
-@app.post("/api/rotate/double_rotate", summary="对比图片相似度", tags=["图片对比"])
+@app.post("/api/rotate/double_rotate", summary="双图旋转验证码", tags=["旋转验证码，OpenCV算法"])
 async def double_rotate(data: DoubleRotateIn, current_user: str = Depends(get_current_user)):
     result = Atc.Double_Rotate(inside_base64=data.inside_base64, outside_base64=data.outside_base64)
     return {"result": result}
