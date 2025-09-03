@@ -36,7 +36,7 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 python main.py
 
 # 5.输入账号密码和端口号，端口号直接回车默认为6688
-# 首次运行要求输入账号密码 然后会把账号密码保存到当前目录下.ebnv文件中 
+# 首次运行要求输入账号密码 然后会把账号密码保存到当前目录下.env文件中 
 # 自行修改账号密码请删除该文件重新运行
 
 # 6.访问Web主页和开发者文档：
