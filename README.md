@@ -9,6 +9,9 @@
 python >= 3.8 64bit
 
 # pyjwt库可能不支持低版本python 推荐使用3.10.6版本 
+
+# https://registry.npmmirror.com/-/binary/python/3.10.6/python-3.10.6-amd64.exe
+
 ```
 
 <div align="center">
