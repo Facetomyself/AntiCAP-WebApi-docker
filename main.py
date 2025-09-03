@@ -68,6 +68,10 @@ class CompareImageIn(BaseModel):
     img2_base64: str
 
 
+class DoubleRotateIn(BaseModel):
+    inside_base64: str
+    outside_base64 : str
+
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login")
 
@@ -207,6 +211,12 @@ async def compare_similarity(data: CompareImageIn, current_user: str = Depends(g
 
 
 
+@app.post("/api/rotate/double_rotate", summary="对比图片相似度", tags=["图片对比"])
+async def double_rotate(data: DoubleRotateIn, current_user: str = Depends(get_current_user)):
+    result = Atc.Double_Rotate(inside_base64=data.inside_base64, outside_base64=data.outside_base64)
+    return {"result": result}
+
+
 
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
@@ -230,7 +240,7 @@ if __name__ == '__main__':
 |         Github: https://github.com/81NewArk             |
 |         Author: 81NewArk                                |
 -----------------------------------------------------------
-|                    Version:1.0.5                        |
+|                    Version:1.0.6                        |
 -----------------------------------------------------------
 
 ''')
