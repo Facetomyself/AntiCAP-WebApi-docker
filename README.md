@@ -59,7 +59,7 @@ http://localhost:6688/docs
 # 1.Git克隆仓库 或 手动下载
 git clone https://github.com/81NewArk/AntiCAP-WebApi
 
-# 2.Windows系统双击 Run.bat文件，会自动安装所需依赖并运行项目
+# 2.根据系统 选择运行 Run-Windows.bat或 Run-Linux.sh 会自动安装所需依赖并运行项目
 
 # 3.输如账号 密码和端口号，端口号直接回车默认为6688
 
