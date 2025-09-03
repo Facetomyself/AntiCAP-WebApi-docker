@@ -139,6 +139,11 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 
 
 
+@app.get("/health", summary="健康检查", tags=["公共"])
+async def health_check():
+    return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
+
+
 @app.post("/api/login", summary="登录获取JWT", tags=["公共"])
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     if form_data.username != VALID_USERNAME or form_data.password != VALID_PASSWORD:
@@ -223,33 +228,16 @@ app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 
 if __name__ == '__main__':
-    print('''
------------------------------------------------------------
-|         Github: https://github.com/81NewArk             |
-|         Author: 81NewArk                                |
------------------------------------------------------------
-|                    Version:1.0.6                        |
------------------------------------------------------------
-
-免责声明：
-本项目基于MIT开源协议发布，欢迎自由使用、修改和分发，但必须遵守中华人民共和国法律法规。使用本项目即表示您已阅读并同意以下条款：
-1. 合法使用： 不得将本项目用于任何违法、违规或侵犯他人权益的行为，包括但不限于网络攻击、诈骗、绕过身份验证、未经授权的数据抓取等。
-2. 风险自负： 任何因使用本项目而产生的法律责任、技术风险或经济损失，由使用者自行承担，项目作者不承担任何形式的责任。
-3. 禁止滥用： 不得将本项目用于违法牟利、黑产活动或其他不当商业用途。
-使用视为同意上述条款,即"谁使用，谁负责"。如不同意，请立即停止使用并删除本项目。
-
-''')
-
-
+    print("Starting AntiCAP-WebApi...")
     SECRET_KEY = os.urandom(32).hex()
 
     if os.path.exists(AUTH_FILE):
         VALID_USERNAME, VALID_PASSWORD, port = load_auth_from_env()
     else:
-        VALID_USERNAME = input("Please enter username: ")
-        VALID_PASSWORD = input("Please enter password: ")
-        port_input = input("Please enter port (default: 6688): ")
-        port = int(port_input) if port_input else 6688
+        # Docker环境：使用环境变量或默认值
+        VALID_USERNAME = os.getenv("DEFAULT_USERNAME", "admin")
+        VALID_PASSWORD = os.getenv("DEFAULT_PASSWORD", "password")
+        port = int(os.getenv("PORT", "8000"))
         save_auth_to_env(VALID_USERNAME, VALID_PASSWORD, port)
 
 

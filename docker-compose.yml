@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  anticap-webapi:
+    build: .
+    container_name: anticap-webapi
+    ports:
+      - "6688:8000"
+    environment:
+      - PYTHONPATH=/app
+      - UVICORN_HOST=0.0.0.0
+      - UVICORN_PORT=8000
+      - DEFAULT_USERNAME=admin
+      - DEFAULT_PASSWORD=password123
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    networks:
+      - anticap-network
+
+networks:
+  anticap-network:
+    driver: bridge
