@@ -43,6 +43,9 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 # 复制项目代码（通过.dockerignore过滤无关文件）
 COPY . .
 
+# 确保Models目录存在并复制模型文件
+RUN mkdir -p /app/Models
+
 # 安全配置：使用非root用户
 RUN useradd -m appuser && chown -R appuser /app
 USER appuser

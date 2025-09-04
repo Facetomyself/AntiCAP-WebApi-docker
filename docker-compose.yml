@@ -11,7 +11,7 @@ services:
       - UVICORN_HOST=0.0.0.0
       - UVICORN_PORT=8000
       - DEFAULT_USERNAME=admin
-      - DEFAULT_PASSWORD=password123
+      - DEFAULT_PASSWORD=password
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]

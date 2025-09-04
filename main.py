@@ -11,11 +11,11 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 
-SECRET_KEY = None
+SECRET_KEY = os.urandom(32).hex()
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 1*60*24* 60  # 60天
-VALID_USERNAME = None
-VALID_PASSWORD = None
+VALID_USERNAME = os.getenv("DEFAULT_USERNAME", "admin")
+VALID_PASSWORD = os.getenv("DEFAULT_PASSWORD", "password")
 AUTH_FILE = ".env"
 
 
@@ -51,11 +51,17 @@ app.add_middleware(
 
 class ModelImageIn(BaseModel):
     img_base64: str
+    math_model_path: Optional[str] = None
+    detectionIcon_model_path: Optional[str] = None
+    detectionText_model_path: Optional[str] = None
 
 
 class ModelOrderImageIn(BaseModel):
     order_img_base64: str
     target_img_base64:str
+    detectionIcon_model_path: Optional[str] = None
+    detectionText_model_path: Optional[str] = None
+    sim_onnx_model_path: Optional[str] = None
 
 
 class SliderImageIn(BaseModel):
@@ -66,6 +72,7 @@ class SliderImageIn(BaseModel):
 class CompareImageIn(BaseModel):
     img1_base64: str
     img2_base64: str
+    sim_onnx_model_path: Optional[str] = None
 
 
 class DoubleRotateIn(BaseModel):
@@ -144,6 +151,35 @@ async def health_check():
     return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
 
 
+@app.get("/api/models", summary="获取可用模型列表", tags=["模型管理"])
+async def get_available_models(current_user: str = Depends(get_current_user)):
+    """获取系统中可用的模型文件列表"""
+    import os
+
+    models_dir = os.path.join(os.getcwd(), "Models")
+
+    if not os.path.exists(models_dir):
+        return {"models": [], "message": "Models directory not found"}
+
+    model_files = []
+    for filename in os.listdir(models_dir):
+        filepath = os.path.join(models_dir, filename)
+        if os.path.isfile(filepath):
+            file_size = os.path.getsize(filepath)
+            model_files.append({
+                "name": filename,
+                "path": filepath,
+                "size": file_size,
+                "size_mb": round(file_size / (1024 * 1024), 2)
+            })
+
+    return {
+        "models": model_files,
+        "total": len(model_files),
+        "models_dir": models_dir
+    }
+
+
 @app.post("/api/login", summary="登录获取JWT", tags=["公共"])
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     if form_data.username != VALID_USERNAME or form_data.password != VALID_PASSWORD:
@@ -175,27 +211,62 @@ async def ocr(data: ModelImageIn, current_user: str = Depends(get_current_user))
 
 @app.post("/api/math",summary="返回计算结果",tags=["计算识别"])
 async def math(data: ModelImageIn, current_user: str = Depends(get_current_user)):
-    result = Atc.Math(data.img_base64)
+    # 如果提供了自定义模型路径，使用自定义模型
+    if data.math_model_path:
+        result = Atc.Math(data.img_base64, math_model_path=data.math_model_path)
+    else:
+        # 使用默认模型
+        result = Atc.Math(data.img_base64)
     return {"result": result }
 
 @app.post("/api/detection/icon",summary="检测图标,返回坐标",tags=["目标检测"])
 async def detection_icon(data: ModelImageIn, current_user: str = Depends(get_current_user)):
-    result = Atc.Detection_Icon(data.img_base64)
+    # 如果提供了自定义模型路径，使用自定义模型
+    if data.detectionIcon_model_path:
+        result = Atc.Detection_Icon(data.img_base64, detectionIcon_model_path=data.detectionIcon_model_path)
+    else:
+        # 使用默认模型
+        result = Atc.Detection_Icon(data.img_base64)
     return {"result": result }
 
 @app.post("/api/detection/text",summary="侦测文字,返回坐标",tags=["目标检测"])
 async def detection_text(data: ModelImageIn, current_user: str = Depends(get_current_user)):
-    result = Atc.Detection_Text(data.img_base64)
+    # 如果提供了自定义模型路径，使用自定义模型
+    if data.detectionText_model_path:
+        result = Atc.Detection_Text(data.img_base64, detectionText_model_path=data.detectionText_model_path)
+    else:
+        # 使用默认模型
+        result = Atc.Detection_Text(data.img_base64)
     return {"result": result}
 
 @app.post("/api/detection/icon/order",summary="按序返回图标的坐标",tags=["目标检测"])
 async def detection_icon_order(data: ModelOrderImageIn, current_user: str = Depends(get_current_user)):
-    result = Atc.ClickIcon_Order(order_img_base64=data.order_img_base64,target_img_base64=data.target_img_base64)
+    # 如果提供了自定义模型路径，使用自定义模型
+    if data.detectionIcon_model_path and data.sim_onnx_model_path:
+        result = Atc.ClickIcon_Order(
+            order_img_base64=data.order_img_base64,
+            target_img_base64=data.target_img_base64,
+            detectionIcon_model_path=data.detectionIcon_model_path,
+            sim_onnx_model_path=data.sim_onnx_model_path
+        )
+    else:
+        # 使用默认模型
+        result = Atc.ClickIcon_Order(order_img_base64=data.order_img_base64,target_img_base64=data.target_img_base64)
     return {"result": result }
 
 @app.post("/api/detection/text/order",summary="按序返回文字的坐标",tags=["目标检测"])
 async def detection_text_order(data: ModelOrderImageIn, current_user: str = Depends(get_current_user)):
-    result = Atc.ClickText_Order(order_img_base64=data.order_img_base64,target_img_base64=data.target_img_base64)
+    # 如果提供了自定义模型路径，使用自定义模型
+    if data.detectionText_model_path and data.sim_onnx_model_path:
+        result = Atc.ClickText_Order(
+            order_img_base64=data.order_img_base64,
+            target_img_base64=data.target_img_base64,
+            detectionText_model_path=data.detectionText_model_path,
+            sim_onnx_model_path=data.sim_onnx_model_path
+        )
+    else:
+        # 使用默认模型
+        result = Atc.ClickText_Order(order_img_base64=data.order_img_base64,target_img_base64=data.target_img_base64)
     return {"result": result }
 
 @app.post("/api/slider/match",summary="缺口滑块,返回坐标",tags=["滑块验证码，OpenCV算法"])
@@ -211,7 +282,16 @@ async def slider_comparison(data: SliderImageIn, current_user: str = Depends(get
 
 @app.post("/api/compare/similarity", summary="对比图片相似度", tags=["图片对比，孪生神经经网络模型"])
 async def compare_similarity(data: CompareImageIn, current_user: str = Depends(get_current_user)):
-    result = Atc.compare_image_similarity(image1_base64=data.img1_base64, image2_base64=data.img2_base64)
+    # 如果提供了自定义模型路径，使用自定义模型
+    if data.sim_onnx_model_path:
+        result = Atc.compare_image_similarity(
+            image1_base64=data.img1_base64,
+            image2_base64=data.img2_base64,
+            sim_onnx_model_path=data.sim_onnx_model_path
+        )
+    else:
+        # 使用默认模型
+        result = Atc.compare_image_similarity(image1_base64=data.img1_base64, image2_base64=data.img2_base64)
     return {"result": float(result)}
 
 
