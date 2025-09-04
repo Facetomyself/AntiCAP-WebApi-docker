@@ -421,8 +421,8 @@ export UVICORN_WORKERS=8
 ```bash
 # 1. Fork项目
 # 2. 克隆到本地
-git clone https://github.com/your-username/AntiCAP-WebApi.git
-cd AntiCAP-WebApi
+git clone https://github.com/Facetomyself/AntiCAP-WebApi-docker
+cd AntiCAP-WebApi-docker
 
 # 3. 创建虚拟环境
 python -m venv venv
