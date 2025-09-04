@@ -125,7 +125,7 @@ services:
 
 启动服务后访问以下地址：
 
-- **Web界面**: http://localhost:6688
+- **Web界面**: http://localhost:6688/login
 - **API文档**: http://localhost:6688/docs
 - **健康检查**: http://localhost:6688/health
 
