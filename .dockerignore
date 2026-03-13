@@ -47,8 +47,8 @@ Thumbs.db
 .gitignore
 
 # Documentation
-README.md
 *.md
+!README.md
 docs/
 
 # Logs
@@ -56,9 +56,6 @@ docs/
 logs/
 
 # Docker
-Dockerfile
-docker-compose*.yml
-.dockerignore
 
 # Temporary files
 *.tmp

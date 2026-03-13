@@ -8,37 +8,48 @@ from fastapi.staticfiles import StaticFiles
 from datetime import datetime, timedelta, timezone
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 
-SECRET_KEY = os.urandom(32).hex()
+def get_required_env(name: str, *, allow_empty: bool = False) -> str:
+    value = os.getenv(name, "")
+    if value or allow_empty:
+        return value
+    raise RuntimeError(f"Missing required environment variable: {name}")
+
+
+SECRET_KEY = get_required_env("SECRET_KEY")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 1*60*24* 60  # 60天
-VALID_USERNAME = os.getenv("DEFAULT_USERNAME", "admin")
-VALID_PASSWORD = os.getenv("DEFAULT_PASSWORD", "password")
-AUTH_FILE = ".env"
-
-
-
+ACCESS_TOKEN_EXPIRE_MINUTES = 1 * 60 * 24 * 60  # 60天
+VALID_USERNAME = get_required_env("DEFAULT_USERNAME")
+VALID_PASSWORD = get_required_env("DEFAULT_PASSWORD")
+APP_PORT = int(os.getenv("PORT", os.getenv("UVICORN_PORT", "8000")))
 
 description = """
 * 通过Http协议 跨语言调用AntiCAP
 
-<img src="https://img.shields.io/badge/GitHub-ffffff"></a> <a href="https://github.com/81NewArk/AntiCAP-WebApi"> <img src="https://img.shields.io/github/stars/81NewArk/AntiCAP-WebApi?style=social"> 
+<img src="https://img.shields.io/badge/GitHub-ffffff"></a> <a href="https://github.com/81NewArk/AntiCAP-WebApi"> <img src="https://img.shields.io/github/stars/81NewArk/AntiCAP-WebApi?style=social">
 
 """
-
 
 app = FastAPI(
     title="AntiCAP - WebApi",
     description=description,
-    version="1.0.5",
-    swagger_ui_parameters={
-        "swagger_js_url": "https://cdn.bootcdn.net/ajax/libs/swagger-ui/5.22.0/swagger-ui-bundle.js",
-        "swagger_css_url": "https://cdn.bootcdn.net/ajax/libs/swagger-ui/5.22.0/swagger-ui.css"
-    }
+    version="1.1.1-docker",
+    docs_url=None,
 )
 
+
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui_html():
+    return get_swagger_ui_html(
+        openapi_url=app.openapi_url,
+        title=app.title + " - 开发者文档",
+        oauth2_redirect_url=app.swagger_ui_oauth2_redirect_url,
+        swagger_js_url="/swagger/swagger-ui-bundle.js",
+        swagger_css_url="/swagger/swagger-ui.css",
+    )
 
 app.add_middleware(
     CORSMiddleware,
@@ -58,7 +69,7 @@ class ModelImageIn(BaseModel):
 
 class ModelOrderImageIn(BaseModel):
     order_img_base64: str
-    target_img_base64:str
+    target_img_base64: str
     detectionIcon_model_path: Optional[str] = None
     detectionText_model_path: Optional[str] = None
     sim_onnx_model_path: Optional[str] = None
@@ -66,7 +77,7 @@ class ModelOrderImageIn(BaseModel):
 
 class SliderImageIn(BaseModel):
     target_base64: str
-    background_base64:str
+    background_base64: str
 
 
 class CompareImageIn(BaseModel):
@@ -77,26 +88,19 @@ class CompareImageIn(BaseModel):
 
 class DoubleRotateIn(BaseModel):
     inside_base64: str
-    outside_base64 : str
+    outside_base64: str
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login")
-
 Atc = AntiCAP.Handler(show_banner=False)
-
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
     now_utc = datetime.now(timezone.utc)
-    if expires_delta:
-        expire = now_utc + expires_delta
-    else:
-        expire = now_utc + timedelta(minutes=15)
+    expire = now_utc + (expires_delta if expires_delta else timedelta(minutes=15))
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
 def verify_token(token: str, credentials_exception):
@@ -116,26 +120,6 @@ def verify_token(token: str, credentials_exception):
         raise credentials_exception
 
 
-def save_auth_to_env(username, password, port):
-    with open(AUTH_FILE, "w") as f:
-        f.write(f"USERNAME={username}\n")
-        f.write(f"PASSWORD={password}\n")
-        f.write(f"PORT={port}\n")
-
-
-def load_auth_from_env():
-    env = {}
-    with open(AUTH_FILE, "r") as f:
-        for line in f:
-            if "=" in line:
-                key, val = line.strip().split("=", 1)
-                env[key.strip()] = val.strip()
-    username = env.get("USERNAME")
-    password = env.get("PASSWORD")
-    port = int(env.get("PORT", 6688))
-    return username, password, port
-
-
 async def get_current_user(token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -145,7 +129,6 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     return verify_token(token, credentials_exception)
 
 
-
 @app.get("/health", summary="健康检查", tags=["公共"])
 async def health_check():
     return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
@@ -153,11 +136,7 @@ async def health_check():
 
 @app.get("/api/models", summary="获取可用模型列表", tags=["模型管理"])
 async def get_available_models(current_user: str = Depends(get_current_user)):
-    """获取系统中可用的模型文件列表"""
-    import os
-
     models_dir = os.path.join(os.getcwd(), "Models")
-
     if not os.path.exists(models_dir):
         return {"models": [], "message": "Models directory not found"}
 
@@ -172,12 +151,7 @@ async def get_available_models(current_user: str = Depends(get_current_user)):
                 "size": file_size,
                 "size_mb": round(file_size / (1024 * 1024), 2)
             })
-
-    return {
-        "models": model_files,
-        "total": len(model_files),
-        "models_dir": models_dir
-    }
+    return {"models": model_files, "total": len(model_files), "models_dir": models_dir}
 
 
 @app.post("/api/login", summary="登录获取JWT", tags=["公共"])
@@ -189,14 +163,8 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": form_data.username},
-        expires_delta=access_token_expires
-    )
-    return {
-        "access_token": access_token,
-        "token_type": "bearer"
-    }
+    access_token = create_access_token(data={"sub": form_data.username}, expires_delta=access_token_expires)
+    return {"access_token": access_token, "token_type": "bearer"}
 
 
 @app.get("/api/tokens/verification", summary="验证JWT", tags=["公共"])
@@ -204,121 +172,72 @@ async def verify_token_endpoint(current_user: str = Depends(get_current_user)):
     return {"username": current_user}
 
 
-@app.post("/api/ocr",summary="返回字符串",tags=["OCR识别"])
+@app.post("/api/ocr", summary="返回字符串", tags=["OCR识别"])
 async def ocr(data: ModelImageIn, current_user: str = Depends(get_current_user)):
-    result = Atc.OCR(data.img_base64)
-    return {"result": result }
+    return {"result": Atc.OCR(data.img_base64)}
 
-@app.post("/api/math",summary="返回计算结果",tags=["计算识别"])
+
+@app.post("/api/math", summary="返回计算结果", tags=["计算识别"])
 async def math(data: ModelImageIn, current_user: str = Depends(get_current_user)):
-    # 如果提供了自定义模型路径，使用自定义模型
-    if data.math_model_path:
-        result = Atc.Math(data.img_base64, math_model_path=data.math_model_path)
-    else:
-        # 使用默认模型
-        result = Atc.Math(data.img_base64)
-    return {"result": result }
-
-@app.post("/api/detection/icon",summary="检测图标,返回坐标",tags=["目标检测"])
-async def detection_icon(data: ModelImageIn, current_user: str = Depends(get_current_user)):
-    # 如果提供了自定义模型路径，使用自定义模型
-    if data.detectionIcon_model_path:
-        result = Atc.Detection_Icon(data.img_base64, detectionIcon_model_path=data.detectionIcon_model_path)
-    else:
-        # 使用默认模型
-        result = Atc.Detection_Icon(data.img_base64)
-    return {"result": result }
-
-@app.post("/api/detection/text",summary="侦测文字,返回坐标",tags=["目标检测"])
-async def detection_text(data: ModelImageIn, current_user: str = Depends(get_current_user)):
-    # 如果提供了自定义模型路径，使用自定义模型
-    if data.detectionText_model_path:
-        result = Atc.Detection_Text(data.img_base64, detectionText_model_path=data.detectionText_model_path)
-    else:
-        # 使用默认模型
-        result = Atc.Detection_Text(data.img_base64)
+    result = Atc.Math(data.img_base64, math_model_path=data.math_model_path) if data.math_model_path else Atc.Math(data.img_base64)
     return {"result": result}
 
-@app.post("/api/detection/icon/order",summary="按序返回图标的坐标",tags=["目标检测"])
+
+@app.post("/api/detection/icon", summary="检测图标,返回坐标", tags=["目标检测"])
+async def detection_icon(data: ModelImageIn, current_user: str = Depends(get_current_user)):
+    result = Atc.Detection_Icon(data.img_base64, detectionIcon_model_path=data.detectionIcon_model_path) if data.detectionIcon_model_path else Atc.Detection_Icon(data.img_base64)
+    return {"result": result}
+
+
+@app.post("/api/detection/text", summary="侦测文字,返回坐标", tags=["目标检测"])
+async def detection_text(data: ModelImageIn, current_user: str = Depends(get_current_user)):
+    result = Atc.Detection_Text(data.img_base64, detectionText_model_path=data.detectionText_model_path) if data.detectionText_model_path else Atc.Detection_Text(data.img_base64)
+    return {"result": result}
+
+
+@app.post("/api/detection/icon/order", summary="按序返回图标的坐标", tags=["目标检测"])
 async def detection_icon_order(data: ModelOrderImageIn, current_user: str = Depends(get_current_user)):
-    # 如果提供了自定义模型路径，使用自定义模型
     if data.detectionIcon_model_path and data.sim_onnx_model_path:
-        result = Atc.ClickIcon_Order(
-            order_img_base64=data.order_img_base64,
-            target_img_base64=data.target_img_base64,
-            detectionIcon_model_path=data.detectionIcon_model_path,
-            sim_onnx_model_path=data.sim_onnx_model_path
-        )
+        result = Atc.ClickIcon_Order(order_img_base64=data.order_img_base64, target_img_base64=data.target_img_base64, detectionIcon_model_path=data.detectionIcon_model_path, sim_onnx_model_path=data.sim_onnx_model_path)
     else:
-        # 使用默认模型
-        result = Atc.ClickIcon_Order(order_img_base64=data.order_img_base64,target_img_base64=data.target_img_base64)
-    return {"result": result }
+        result = Atc.ClickIcon_Order(order_img_base64=data.order_img_base64, target_img_base64=data.target_img_base64)
+    return {"result": result}
 
-@app.post("/api/detection/text/order",summary="按序返回文字的坐标",tags=["目标检测"])
+
+@app.post("/api/detection/text/order", summary="按序返回文字的坐标", tags=["目标检测"])
 async def detection_text_order(data: ModelOrderImageIn, current_user: str = Depends(get_current_user)):
-    # 如果提供了自定义模型路径，使用自定义模型
     if data.detectionText_model_path and data.sim_onnx_model_path:
-        result = Atc.ClickText_Order(
-            order_img_base64=data.order_img_base64,
-            target_img_base64=data.target_img_base64,
-            detectionText_model_path=data.detectionText_model_path,
-            sim_onnx_model_path=data.sim_onnx_model_path
-        )
+        result = Atc.ClickText_Order(order_img_base64=data.order_img_base64, target_img_base64=data.target_img_base64, detectionText_model_path=data.detectionText_model_path, sim_onnx_model_path=data.sim_onnx_model_path)
     else:
-        # 使用默认模型
-        result = Atc.ClickText_Order(order_img_base64=data.order_img_base64,target_img_base64=data.target_img_base64)
-    return {"result": result }
+        result = Atc.ClickText_Order(order_img_base64=data.order_img_base64, target_img_base64=data.target_img_base64)
+    return {"result": result}
 
-@app.post("/api/slider/match",summary="缺口滑块,返回坐标",tags=["滑块验证码，OpenCV算法"])
+
+@app.post("/api/slider/match", summary="缺口滑块,返回坐标", tags=["滑块验证码，OpenCV算法"])
 async def slider_match(data: SliderImageIn, current_user: str = Depends(get_current_user)):
-    result = Atc.Slider_Match(target_base64=data.target_base64,background_base64=data.background_base64)
-    return {"result": result }
+    return {"result": Atc.Slider_Match(target_base64=data.target_base64, background_base64=data.background_base64)}
 
-@app.post("/api/slider/comparison",summary="阴影滑块,返回坐标",tags=["滑块验证码，OpenCV算法"])
+
+@app.post("/api/slider/comparison", summary="阴影滑块,返回坐标", tags=["滑块验证码，OpenCV算法"])
 async def slider_comparison(data: SliderImageIn, current_user: str = Depends(get_current_user)):
-    result = Atc.Slider_Comparison(target_base64=data.target_base64,background_base64=data.background_base64)
-    return {"result": result }
+    return {"result": Atc.Slider_Comparison(target_base64=data.target_base64, background_base64=data.background_base64)}
 
 
 @app.post("/api/compare/similarity", summary="对比图片相似度", tags=["图片对比，孪生神经经网络模型"])
 async def compare_similarity(data: CompareImageIn, current_user: str = Depends(get_current_user)):
-    # 如果提供了自定义模型路径，使用自定义模型
-    if data.sim_onnx_model_path:
-        result = Atc.compare_image_similarity(
-            image1_base64=data.img1_base64,
-            image2_base64=data.img2_base64,
-            sim_onnx_model_path=data.sim_onnx_model_path
-        )
-    else:
-        # 使用默认模型
-        result = Atc.compare_image_similarity(image1_base64=data.img1_base64, image2_base64=data.img2_base64)
+    result = Atc.compare_image_similarity(image1_base64=data.img1_base64, image2_base64=data.img2_base64, sim_onnx_model_path=data.sim_onnx_model_path) if data.sim_onnx_model_path else Atc.compare_image_similarity(image1_base64=data.img1_base64, image2_base64=data.img2_base64)
     return {"result": float(result)}
-
 
 
 @app.post("/api/rotate/double/rotate", summary="双图旋转验证码", tags=["旋转验证码，OpenCV算法"])
 async def double_rotate(data: DoubleRotateIn, current_user: str = Depends(get_current_user)):
-    result = Atc.Double_Rotate(inside_base64=data.inside_base64, outside_base64=data.outside_base64)
-    return {"result": result}
+    return {"result": Atc.Double_Rotate(inside_base64=data.inside_base64, outside_base64=data.outside_base64)}
 
 
-
+app.mount("/swagger", StaticFiles(directory="static/swagger"), name="swagger")
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
-
 
 
 if __name__ == '__main__':
     print("Starting AntiCAP-WebApi...")
-    SECRET_KEY = os.urandom(32).hex()
-
-    if os.path.exists(AUTH_FILE):
-        VALID_USERNAME, VALID_PASSWORD, port = load_auth_from_env()
-    else:
-        # Docker环境：使用环境变量或默认值
-        VALID_USERNAME = os.getenv("DEFAULT_USERNAME", "admin")
-        VALID_PASSWORD = os.getenv("DEFAULT_PASSWORD", "password")
-        port = int(os.getenv("PORT", "8000"))
-        save_auth_to_env(VALID_USERNAME, VALID_PASSWORD, port)
-
-
-    uvicorn.run(app, host="0.0.0.0", port=port, access_log=True)
+    uvicorn.run(app, host="0.0.0.0", port=APP_PORT, access_log=True)
