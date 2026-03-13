@@ -225,7 +225,7 @@ async def slider_comparison(data: SliderImageIn, current_user: str = Depends(get
 
 @app.post("/api/compare/similarity", summary="对比图片相似度", tags=["图片对比，孪生神经经网络模型"])
 async def compare_similarity(data: CompareImageIn, current_user: str = Depends(get_current_user)):
-    result = Atc.compare_image_similarity(image1_base64=data.img1_base64, image2_base64=data.img2_base64, sim_onnx_model_path=data.sim_onnx_model_path) if data.sim_onnx_model_path else Atc.compare_image_similarity(image1_base64=data.img1_base64, image2_base64=data.img2_base64)
+    result = Atc.Compare_Image_Similarity(image1_base64=data.img1_base64, image2_base64=data.img2_base64, sim_onnx_model_path=data.sim_onnx_model_path) if data.sim_onnx_model_path else Atc.Compare_Image_Similarity(image1_base64=data.img1_base64, image2_base64=data.img2_base64)
     return {"result": float(result)}
 
 
