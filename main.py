@@ -231,7 +231,17 @@ async def compare_similarity(data: CompareImageIn, current_user: str = Depends(g
 
 @app.post("/api/rotate/double/rotate", summary="双图旋转验证码", tags=["旋转验证码，OpenCV算法"])
 async def double_rotate(data: DoubleRotateIn, current_user: str = Depends(get_current_user)):
-    return {"result": Atc.Double_Rotate(inside_base64=data.inside_base64, outside_base64=data.outside_base64)}
+    try:
+        return {"result": Atc.Double_Rotate(inside_base64=data.inside_base64, outside_base64=data.outside_base64)}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "message": "double rotate failed on this image pair",
+                "error": str(e),
+                "error_type": type(e).__name__,
+            },
+        )
 
 
 app.mount("/swagger", StaticFiles(directory="static/swagger"), name="swagger")
